@@ -6,19 +6,39 @@ interface Side {
 export function parse_sequence(input: string): string {
   let output = "";
 
-  const rh: Side = { don: 'j', ka: 'k' };
-  const lh: Side = { don: 'f', ka: 'd' };
-  let ch = rh;
+  const [ right_hand, left_hand ] = read_sides("keys.json");
+  let current_hand = right_hand;
 
-  for(const c of input) {
-    if (c == 'k') output += ch.ka;
-    if (c == 'd') output += ch.don;
+  for(const note of input) {
+    if (note == "k") {
+      output += current_hand.ka;
+    } else if (note == "d") {
+      output += current_hand.don;
+    } else {
+      console.error(`unknown note: "${note}"!`);
+      Deno.exit(1);
+    }
 
-    ch = (ch == rh) ? lh : rh;
+    current_hand = (current_hand == right_hand) ? left_hand : right_hand;
   }
 
   return output;
 }
 
-const a = parse_sequence(Deno.args[0]);
-console.log(a);
+function read_sides(file: string): [Side, Side] {
+  try {
+    const file_contents = Deno.readTextFileSync(file);
+    const file_json = JSON.parse(file_contents) as [Side, Side];
+    if (file_json[0].don == undefined || file_json[0].ka == undefined || file_json[1].don == undefined || file_json[1].ka == undefined) {
+      throw("could not find a ka/don field!");
+    }
+
+    return file_json;
+  } catch (err) {
+    console.error(`error reading keys: ${err}`);
+    Deno.exit(1);
+  }
+}
+
+const input = Deno.args[0];
+console.log(parse_sequence(input));
